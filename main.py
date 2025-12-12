@@ -21,13 +21,16 @@ pre{white-space:pre-wrap;background:#f6f6f6;padding:16px;border-radius:12px}</st
 PDF_URL = os.getenv("PDF_URL", "").strip()
 
 def extract_text(pdf_path: str) -> str:
-    reader = PdfReader(pdf_path)
-    chunks = []
-    for p in reader.pages[:30]:
-        t = p.extract_text() or ""
-        chunks.append(t)
-    return "\n".join(chunks).strip()
-
+    try:
+        reader = PdfReader(pdf_path)
+        chunks = []
+        for p in reader.pages[:30]:
+            t = p.extract_text() or ""
+            chunks.append(t)
+        return "\n".join(chunks).strip()
+    except Exception as e:
+        print(f"Errore estrazione PDF: {e}")
+        return ""
 def main():
     if not PDF_URL:
         raise SystemExit("Missing PDF_URL env var")
