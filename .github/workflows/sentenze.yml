@@ -29,3 +29,11 @@ jobs:
         with:
           name: sentenze_public
           path: public/
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add public/
+          git commit -m "Auto-update sentenze" || true
+          git push
