@@ -35,11 +35,15 @@ def main():
     today = dt.date.today().isoformat()
     pdf_path = os.path.join(OUT_DIR, f"sentenza_{today}.pdf")
 
-    r = requests.get(PDF_URL, timeout=60)
-    r.raise_for_status()
-    with open(pdf_path, "wb") as f:
-        f.write(r.content)
-
+    try:
+        r = requests.get(PDF_URL, timeout=60)
+        r.raise_for_status()
+        with open(pdf_path, "wb") as f:
+            f.write(r.content)
+    except Exception as e:
+        print(f"Errore download PDF: {e}. Creando file vuoto.")
+        with open(pdf_path, "wb") as f:
+            f.write(b"")
     text = extract_text(pdf_path)
     html = HTML_TPL.render(date=today, source=PDF_URL, text=text[:200000])
 
