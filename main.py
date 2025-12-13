@@ -1,4 +1,4 @@
-import os, datetime as dt, requests
+import os, datetime as dt, requests, sys
 from pypdf import PdfReader
 from jinja2 import Template
 
@@ -41,12 +41,18 @@ def main():
     try:
         r = requests.get(PDF_URL, timeout=60)
         r.raise_for_status()
+        if not r.content:
+            raise Exception("Ricevuto contenuto vuoto dal server")
         with open(pdf_path, "wb") as f:
             f.write(r.content)
     except Exception as e:
-        print(f"Errore download PDF: {e}. Creando file vuoto.")
-        with open(pdf_path, "wb") as f:
-            f.write(b"")
+        print(f"Errore download PDF: {e}. Interrompo l'esecuzione.")
+        try:
+            if os.path.exists(pdf_path) and os.path.getsize(pdf_path) == 0:
+                os.remove(pdf_path)
+        except Exception:
+            pass
+        sys.exit(1)
     text = extract_text(pdf_path)
     html = HTML_TPL.render(date=today, source=PDF_URL, text=text[:200000])
 
