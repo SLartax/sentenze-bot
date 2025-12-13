@@ -5,11 +5,17 @@ on:
     - cron: "0 8 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,10 +36,22 @@ jobs:
           name: sentenze_public
           path: public/
 
-      - name: Commit and push changes
+      - name: Commit and push changes (only if there are non-empty changes)
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add public/
+
+          # remove any zero-byte files in public/ to be safe
+          find public/ -type f -size 0 -print -delete || true
+
+          # stage changes if any
+          git add -A public/ || true
+
+          # check if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit; skipping push"
+            exit 0
+          fi
+
           git commit -m "Auto-update sentenze" || true
           git push
