@@ -2,10 +2,59 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <title>Sentenze - Studio Legale Artax</title>
+  <title>Sentenze – Studio Legale Artax</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }
+    h1 {
+      margin-bottom: 0.2em;
+    }
+    .meta {
+      color: #666;
+      margin-bottom: 24px;
+    }
+    #sent {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+  </style>
 </head>
+
 <body>
+
   <h1>Banca dati sentenze</h1>
-  <p>Il deploy GitHub Pages funziona correttamente.</p>
+  <div class="meta">Studio Legale Artax</div>
+
+  <div id="sent">
+    <p style="text-align:center;color:#666;">Caricamento della sentenza del giorno…</p>
+  </div>
+
+  <script>
+  (async () => {
+    const URL = "https://slartax.github.io/sentenze-bot/sentenze/latest.html";
+    try {
+      const r = await fetch(URL, { cache: "no-store" });
+      if (!r.ok) throw new Error(r.status);
+      const html = await r.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      document.getElementById("sent").innerHTML = doc.body.innerHTML;
+    } catch (e) {
+      document.getElementById("sent").innerHTML = `
+        <p style="color:#b00020;text-align:center;">
+          <strong>⚠️ Nessuna sentenza disponibile</strong><br>
+          Il riassunto verrà pubblicato automaticamente al prossimo aggiornamento.
+        </p>`;
+    }
+  })();
+  </script>
+
 </body>
 </html>
