@@ -55,3 +55,8 @@ jobs:
 
           git commit -m "Auto-update sentenze" || true
           git push
+
+
+  - name: Run Selenium scraper for latest sentenze
+    run: python scraper_sentenze.py
+    continue-on-error: true
