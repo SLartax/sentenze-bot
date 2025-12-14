@@ -61,14 +61,21 @@ HTML_TPL = Template("""
 # SELENIUM SETUP (HEADLESS)
 # =========================
 def make_driver():
-    options = Options()
-    options.add_argument("--headless")  # Chrome headless mode
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
+    opts = Options()
+    opts.add_argument("--headless")  # Chrome headless mode
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--window-size=1920,1080")
 
-    service = Service("/usr/bin/chromedriver")
-    return webdriver.Chrome(service=service, options=options)
+    # Usa il binario di Chromium invece di google-chrome
+    opts.binary_location = "/usr/bin/chromium-browser"  # Percorso di Chromium su Ubuntu
+
+    # Specifica il percorso di Chromedriver
+    service = Service(executable_path="/usr/bin/chromedriver")  # Percorso di Chromedriver su Ubuntu
+
+    # Inizializza e restituisce il driver
+    driver = webdriver.Chrome(service=service, options=opts)
+    return driver
 
 # =========================
 # MAIN SCRAPER
