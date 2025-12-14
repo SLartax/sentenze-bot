@@ -31,17 +31,17 @@ jobs:
           python-version: "3.11"
 
       # =========================
-      # INSTALL CHROME (HEADLESS)
+      # INSTALL CHROMIUM & CHROMEDRIVER
       # =========================
-      - name: Install Chromium
+      - name: Install Chromium and Chromedriver
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver || sudo apt-get install -y chromium-driver
-          chromium-browser --version || echo "chromium-browser not in PATH, using chromium"
-          chromedriver --version || echo "chromedriver not in PATH"
+          sudo apt-get install -y chromium-browser chromium-chromedriver || sudo apt-get install -y chromium chromium-driver
+          which chromium-browser || which chromium || true
+          which chromedriver || true
 
       # =========================
-      # INSTALL PYTHON DEPS
+      # INSTALL DEPENDENCIES
       # =========================
       - name: Install dependencies
         run: |
@@ -49,26 +49,21 @@ jobs:
           pip install -r requirements.txt
 
       # =========================
-      # RUN BOT (SELENIUM SCRAPER)
+      # RUN THE BOT (SCRAPER)
       # =========================
       - name: Run sentenza scraper
-        env:
-          # NIENTE PDF_URL, tutto da Selenium
-          PYTHONUNBUFFERED: "1"
-        run: |
-          python main.py
+        run: python main.py
 
       # =========================
-      # COMMIT & PUSH OUTPUT
+      # COMMIT AND PUSH CHANGES
       # =========================
       - name: Commit and push results
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # Rimuove file vuoti (sicurezza)
           find sentenze/ -type f -size 0 -delete || true
 
           git add sentenze/
-          git commit -m "Update sentenza $(date -u +%F)" || echo "No changes to commit"
+          git commit -m "Update sentenza $(date -u +%F)" || echo "No changes"
           git push
