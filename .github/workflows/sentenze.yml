@@ -1,4 +1,4 @@
-name: Build sentenze
+name: Daily Sentenza
 
 on:
   schedule:
@@ -17,39 +17,23 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install deps
         run: pip install -r requirements.txt
 
-      - name: Run Selenium scraper
-        run: python scraper_sentenze.py
-        continue-on-error: true
+      - name: Run bot (generate sentenze/latest.html)
+        env:
+          PDF_URL: ${{ secrets.PDF_URL }}
+        run: python main.py
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentenze_output
-          path: public/
-        if: always()
-
-      - name: Commit and push changes
+      - name: Commit and push outputs
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          # Rimuovi file vuoti
-          find public/ -type f -size 0 -delete || true
-          # Stage changes
-          git add -A public/ || true
-          # Verifica se ci sono cambiamenti
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          # Commit e push
-          git commit -m "Auto-update sentenze"
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add sentenze/
+          git commit -m "Update sentenza $(date -u +%F)" || echo "No changes"
           git push
-        continue-on-error: true
