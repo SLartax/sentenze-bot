@@ -3,19 +3,23 @@ import datetime as dt
 from pathlib import Path
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from jinja2 import Template
 
 # =========================
-# OUTPUT
+# OUTPUT (ROOT del repo)
 # =========================
 OUT_DIR = Path("sentenze")
-OUT_DIR.mkdir(exist_ok=True)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Base URL per GitHub Pages
 SITE_BASE = "https://slartax.github.io/sentenze-bot"
+LATEST_HTML_URL = f"{SITE_BASE}/sentenze/latest.html"
+LATEST_PDF_URL  = f"{SITE_BASE}/sentenze/latest.pdf"
 
 # =========================
 # HTML TEMPLATE
@@ -25,18 +29,30 @@ HTML_TPL = Template("""
 <html lang="it">
 <head>
   <meta charset="utf-8">
-  <title>Riassunto sentenza</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Riassunto sentenza - {{ date }}</title>
 </head>
 <body>
-<style>
-body{font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;line-height:1.6}
-pre{white-space:pre-wrap;background:#f6f6f6;padding:16px;border-radius:12px;border:1px solid #ddd}
-</style>
+  <style>
+    body {font-family: system-ui; max-width: 900px; margin: 40px auto; padding: 0 16px; line-height: 1.6;}
+    pre {white-space: pre-wrap; background: #f6f6f6; padding: 16px; border-radius: 12px; border: 1px solid #ddd;}
+  </style>
 
-<h1>📄 Sentenza del giorno</h1>
-<p><strong>Data:</strong> {{ date }}</p>
+  <h1>Riassunto sentenza</h1>
+  <div class="meta">
+    <strong>Data:</strong> {{ date }} • <strong>Fonte:</strong> {{ source }}
+  </div>
 
-<pre>{{ text }}</pre>
+  <p>
+    <a href="{{ latest_pdf_url }}" target="_blank" rel="noopener">⬇️ PDF originale</a>
+    <a href="{{ latest_html_url }}" target="_blank" rel="noopener">🔗 Apri HTML</a>
+  </p>
+
+  {% if warning %}
+    <p style="color:#b00020;"><strong>Nota:</strong> {{ warning }}</p>
+  {% endif %}
+
+  <pre>{{ text }}</pre>
 </body>
 </html>
 """)
@@ -45,12 +61,14 @@ pre{white-space:pre-wrap;background:#f6f6f6;padding:16px;border-radius:12px;bord
 # SELENIUM SETUP (HEADLESS)
 # =========================
 def make_driver():
-    opts = Options()
-    opts.add_argument("--headless=new")
-    opts.add_argument("--no-sandbox")
-    opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--window-size=1920,1080")
-    return webdriver.Chrome(options=opts)
+    options = Options()
+    options.add_argument("--headless")  # Chrome headless mode
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--window-size=1920,1080")
+
+    service = Service("/usr/bin/chromedriver")
+    return webdriver.Chrome(service=service, options=options)
 
 # =========================
 # MAIN SCRAPER
@@ -63,34 +81,34 @@ def main():
     driver.get("https://bancadatigiurisprudenza.giustiziatributaria.gov.it/ricerca")
     time.sleep(3)
 
-    # ANNO 2025
+    # 1. SELEZIONA ANNO 2025
     anno = wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//label[contains(text(),'Anno')]/parent::div//select")
     ))
     Select(anno).select_by_value("2025")
 
-    # ESITO FAVOREVOLE
+    # 2. SELEZIONA ESITO FAVOREVOLE
     esito = wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//label[contains(text(),'Esito giudizio')]/parent::div//select")
     ))
     Select(esito).select_by_visible_text("Favorevole al contribuente")
 
-    # RICERCA
+    # 3. CLICCA RICERCA
     btn = wait.until(EC.element_to_be_clickable(
         (By.XPATH, "//button[contains(text(),'Ricerca')]")
     ))
     btn.click()
 
-    # RISULTATI
+    # 4. ATTENDI RISULTATI
     wait.until(EC.presence_of_element_located((By.XPATH, "//table")))
 
-    # PRIMA SENTENZA
+    # 5. CLICCA LA PRIMA SENTENZA
     first = wait.until(EC.element_to_be_clickable(
         (By.XPATH, "(//a[contains(@href,'dettaglio')])[1]")
     ))
     first.click()
 
-    # TESTO
+    # 6. ESTRAI IL TESTO
     blocco = wait.until(EC.presence_of_element_located(
         (By.XPATH, "//div[contains(@class,'sentenza') or contains(@class,'container')]")
     ))
@@ -103,14 +121,14 @@ def main():
 
     today = dt.date.today().isoformat()
 
+    # 7. GENERA HTML
     html = HTML_TPL.render(
         date=today,
+        source=PDF_URL,
         text=testo[:200000]
     )
 
-    # =========================
-    # SCRITTURE
-    # =========================
+    # 8. SCRITTURA DEI FILE
     (OUT_DIR / "latest.html").write_text(html, encoding="utf-8")
     (OUT_DIR / f"sentenza_{today}.html").write_text(html, encoding="utf-8")
 
