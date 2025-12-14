@@ -103,6 +103,43 @@ def main():
         f.write(open(pdf_path, "rb").read())
     
     print("OK:", html_path, pdf_path)
+    # ===== CREATE INDEX.HTML FOR GITHUB PAGES =====
+index_html = f"""<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>Banca dati sentenze</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body {{
+      font-family: system-ui;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }}
+    a {{
+      display: block;
+      margin: 12px 0;
+      font-size: 1.1em;
+    }}
+  </style>
+</head>
+<body>
+  <h1>📚 Banca dati sentenze</h1>
+  <p>Ultimo aggiornamento: <strong>{today}</strong></p>
+
+  <a href="sentenze/latest.html">📄 Leggi ultima sentenza (HTML)</a>
+  <a href="sentenze/latest.pdf">⬇️ Scarica PDF originale</a>
+</body>
+</html>
+"""
+
+with open(os.path.join("public", "index.html"), "w", encoding="utf-8") as f:
+    f.write(index_html)
+
+print("✓ index.html creato per GitHub Pages")
+
 
 if __name__ == "__main__":
     main()
