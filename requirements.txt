@@ -1,3 +1,5 @@
 requests
 pypdf
 jinja2
+selenium==4.14.0
+undetected-chromedriver>=3.5.4
